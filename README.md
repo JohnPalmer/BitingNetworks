@@ -1,2 +1,5 @@
-This is an awesome new scientific project that uses `DrWatson`!
+# BitingNetworks
+
+## Human-Mosquito Biting Networks and the Dynamics of Mosquito-Borne Disease
+
 
