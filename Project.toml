@@ -2,6 +2,7 @@ name = "BitingNetworks"
 authors = ["John Palmer"]
 
 [deps]
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
