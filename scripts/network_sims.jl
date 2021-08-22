@@ -6,27 +6,27 @@ Threads.nthreads()
 
 Random.seed!(123)
 
-n_steps = 50
-n_reps = 15
-n_humans = 1000
-n_mosquitoes = 10000
+const n_steps = 50
+const n_reps = 300
+const n_humans = 1000
+const n_mosquitoes = 10000
 
 # how long before infected human recovers
-human_infection_time = 3
+const human_infection_time = 3
 
 # how long do mosquitoes live. Since mosquitoes do not usually get accute arbovirus infections, the life span is the key: They will go from susceptible->infected->dead/reborn. (With assumption of population stability, deaths simply put the agent back to susceptible status.) "Unlike arboviral infections in humans, which are usually acute, arboviral infections in mosquitoes are persistent. Once the infection is established, the mosquito remains infected for the rest of its life." https://www.sciencedirect.com/science/article/pii/S1931312819303701
-mosquito_life_span = 20
+const mosquito_life_span = 20
 
-neg_bin_r = 2
-neg_bin_p = .1
+const neg_bin_r = 2
+const neg_bin_p = .1
 
-neg_bin_r_a = 5
-neg_bin_p_a = .2
+const neg_bin_r_a = 5
+const neg_bin_p_a = .21
 
-neg_bin_r_b = 10
-neg_bin_p_b = .35
+const neg_bin_r_b = 10
+const neg_bin_p_b = .35
 
-transmission_prob = .1
+const transmission_prob = .1
 
 human_distribution = NegativeBinomial(neg_bin_r, neg_bin_p)
 
@@ -242,6 +242,6 @@ max_bites = maximum([maximum(x[4]) for x in scenario_results])
 
 these_bite_plots = [density(x[4], xaxis = ("N Bites", (0, max_bites), 0:40:max_bites), yaxis = ("Density", (0, .1), 0:.02:.1), legend=:none) for x in scenario_results]
 
-l = @layout [a b c d e; f g h i j]
+l = @layout [a f; b g; c h; d i; e j]
 
-plot(these_plots[1], these_plots[2], these_plots[3],these_plots[4], these_plots[5], these_bite_plots[1], these_bite_plots[2], these_bite_plots[3], these_bite_plots[4], these_bite_plots[5], layout = l)
+plot(these_plots[1], these_bite_plots[1], these_plots[2], these_bite_plots[2], these_plots[3], these_bite_plots[3],these_plots[4], these_bite_plots[4], these_plots[5], these_bite_plots[5], layout = l)
