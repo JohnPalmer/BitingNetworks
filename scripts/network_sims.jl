@@ -7,14 +7,20 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_steps = 100
-n_reps = 200
-n_humans = 1000
+n_reps = 100
+n_humans = 500
 n_mosquitoes = 2000
 
-neg_bin_r = 2
-neg_bin_p = .4
+# how long before infected human recovers
+human_infection_time = 3
 
-transmission_prob = .05
+# how long do mosquitoes live. Since mosquitoes do not usually get accute arbovirus infections, the life span is the key: They will go from susceptible->infected->dead/reborn. (With assumption of population stability, deaths simply put the agent back to susceptible status.) "Unlike arboviral infections in humans, which are usually acute, arboviral infections in mosquitoes are persistent. Once the infection is established, the mosquito remains infected for the rest of its life." https://www.sciencedirect.com/science/article/pii/S1931312819303701
+mosquito_life_span = 20
+
+neg_bin_r = 2
+neg_bin_p = .2
+
+transmission_prob = .2
 
 human_distribution = NegativeBinomial(neg_bin_r, neg_bin_p)
 
@@ -39,7 +45,8 @@ scenario_results = []
 
 scenarios = [[mosquito_probs1, human_probs1],[mosquito_probs2, human_probs2], [mosquito_probs3, human_probs3] ]
 
-scenario = scenarios[2]
+scenario = scenarios[3]
+
 for scenario in scenarios
 
   mosquito_probs = scenario[1]
@@ -74,26 +81,49 @@ for scenario in scenarios
 
   n_mosquito_infections_reps = Array{Int64}(undef, n_reps, n_steps)
 
+  n_human_recovered_reps = Array{Int64}(undef, n_reps, n_steps)
+
   p = Progress(n_reps)
 
   Threads.@threads for r = 1:n_reps
 
-  # creating first infection
+  # vectors of infections statusas follows: 0 = susceptible, >0 = infected, <0 = recovered. Everyone starts susceptible
   status_humans = zeros(Int8, n_humans)
-  status_humans[rand(1:n_humans, 1)[1]] = 1
-
   status_mosquitoes = zeros(Int8, n_mosquitoes)
+
+  # vector of mosquito ages
+  age_mosquitoes = rand(DiscreteUniform(0, mosquito_life_span), n_mosquitoes)
+
+  # creating first infection
+  status_humans[rand(1:n_humans, 1)[1]] = 1
 
   n_human_infections = Vector{Int64}(undef, n_steps)
   n_mosquito_infections = Vector{Int64}(undef, n_steps)
 
+  n_human_recovered = Vector{Int64}(undef, n_steps)
+
   n_human_infections[1] = 1
   n_mosquito_infections[1] = 0
+  n_human_recovered[1] = 0
 
     for s = 2:n_steps
 
-      i_hs = findall(status_humans .== 1)
+      # update statuses based on time n_steps
+      status_humans[findall(status_humans .> 0)] .+= 1
+      status_humans[findall(status_humans .> human_infection_time)] .= -1
+
+      # all mosquitoes age by 1 step
+      age_mosquitoes .+= 1
+      # mosquitoes over max age die and are reborn (under assumption of stable population) as susceptible
+      status_mosquitoes[findall(age_mosquitoes .> mosquito_life_span)] .= 0
+      age_mosquitoes[findall(age_mosquitoes .> mosquito_life_span)] .= 0
+
+      # find indexes of infected humans (status>0)
+      i_hs = findall(status_humans .> 0)
+      # find indexes of susecptible mosquitoes (status == 0)
       s_ms = findall(status_mosquitoes .==0)
+      
+      # calculate number of iterations needed to cycle through all combinations. (This is useful if parallizing over these iterations, since it allows for more efficient distribution of the tasks)
       these_iterations = 1:length(i_hs)*length(s_ms)
 
     # human-to-mosquito infections
@@ -105,7 +135,7 @@ for scenario in scenarios
         end
       end
 
-    n_mosquito_infections[s] = sum(status_mosquitoes)
+    n_mosquito_infections[s] = sum(status_mosquitoes .> 0)
 
     s_hs = findall(status_humans .== 0)
     i_ms = findall(status_mosquitoes .==1)
@@ -120,13 +150,16 @@ for scenario in scenarios
         end
       end
 
-      n_human_infections[s] = sum(status_humans)
+      n_human_infections[s] = sum(status_humans.>0)
+      n_human_recovered[s] = sum(status_humans.<0)
 
     end
 
     n_human_infections_reps[r, :] = n_human_infections
 
     n_mosquito_infections_reps[r, :] = n_mosquito_infections
+
+    n_human_recovered_reps[r, :] = n_human_recovered
 
     next!(p)
 
@@ -161,19 +194,20 @@ end
 
 mosquito_R0 = mean(R0s)
 
-scenario_result = [n_human_infections_reps, human_R0, mosquito_R0, human_bite_distribution, mosquito_bite_distribution]
+scenario_result = [n_human_infections_reps, human_R0, mosquito_R0, human_bite_distribution, mosquito_bite_distribution, n_human_recovered_reps]
 
 push!(scenario_results, scenario_result)
 
 end
 
-scenario_results[1][2]
-scenario_results[2][2]
-scenario_results[3][2]
+R0 = [x[2] for x in scenario_results]
 
-mean(scenario_results[1][4])
-mean(scenario_results[2][4])
-mean(scenario_results[3][4])
+scenario_results[1][6][:,n_steps] .+ scenario_results[1][1][:,n_steps] 
+
+AR = [ quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])  for x in scenario_results]
+
+mean_bites_per_person = [mean(x[4]) for x in scenario_results]
+
 
 these_plots = []
 
@@ -188,6 +222,4 @@ for i in 1:length(scenarios)
   push!(these_plots, this_p)
 end
 
-plot(these_plots[1], these_plots[2], these_plots[3])
-
-plot(density(scenario_results[1][4]), density(scenario_results[2][4]), density(scenario_results[3][4]))
+plot(these_plots[1], these_plots[2], these_plots[3], density(scenario_results[1][4]), density(scenario_results[2][4]), density(scenario_results[3][4]))
