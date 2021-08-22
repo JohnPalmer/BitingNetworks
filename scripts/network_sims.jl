@@ -7,9 +7,9 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_steps = 100
-n_reps = 300
-n_humans = 100
-n_mosquitoes = 400
+n_reps = 200
+n_humans = 1000
+n_mosquitoes = 2000
 
 neg_bin_r = 2
 neg_bin_p = .4
@@ -20,23 +20,24 @@ human_distribution = NegativeBinomial(neg_bin_r, neg_bin_p)
 
 # human_distribution = Beta(2, 5)
 # mosquito_distribution = Beta(.2, 2)
-
-# human_distribution = Uniform(0, 1)
-# mosquito_distribution = Uniform(0, 1)
-
-# human_probs = rand(human_distribution, n_humans)
-# mosquito_probs = rand(mosquito_distribution, n_mosquitoes)
-
 mosquito_probs1 = fill(1/n_humans, (n_mosquitoes,1))
 
-human_probs1 = rand(human_distribution, n_humans)/(sum(mosquito_probs))
+human_probs1 = rand(human_distribution, n_humans)/(sum(mosquito_probs1))
 
 human_probs2 = fill(mean(human_probs1), (n_humans,1))
 mosquito_probs2 = fill(mean(mosquito_probs1), (n_mosquitoes,1))
 
+
+human_distribution3 = Uniform(0, mean(human_probs1)*2)
+mosquito_distribution3 = Uniform(0, mean(mosquito_probs1)*2)
+
+human_probs3 = rand(human_distribution3, n_humans)
+mosquito_probs3 = rand(mosquito_distribution3, n_mosquitoes)
+
+
 scenario_results = []
 
-scenarios = [[mosquito_probs1, human_probs1],[mosquito_probs2, human_probs2] ]
+scenarios = [[mosquito_probs1, human_probs1],[mosquito_probs2, human_probs2], [mosquito_probs3, human_probs3] ]
 
 scenario = scenarios[2]
 for scenario in scenarios
@@ -168,13 +169,15 @@ end
 
 scenario_results[1][2]
 scenario_results[2][2]
+scenario_results[3][2]
 
 mean(scenario_results[1][4])
 mean(scenario_results[2][4])
+mean(scenario_results[3][4])
 
 these_plots = []
 
-for i in 1:2
+for i in 1:length(scenarios)
   n_human_infections_reps = scenario_results[i][1]
   n_human_infections_reps_median = transpose(median(n_human_infections_reps, dims=1))
 
@@ -185,4 +188,6 @@ for i in 1:2
   push!(these_plots, this_p)
 end
 
-plot(these_plots[1], these_plots[2])
+plot(these_plots[1], these_plots[2], these_plots[3])
+
+plot(density(scenario_results[1][4]), density(scenario_results[2][4]), density(scenario_results[3][4]))
