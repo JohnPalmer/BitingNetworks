@@ -1,4 +1,5 @@
 using Distributions
+using Bites
 
 function infect(human_prob::Float64, mosquito_prob::Float64, transmission_prob::Float64)::Bool
     rand(Bernoulli(human_prob*mosquito_prob*transmission_prob), 1)[1]

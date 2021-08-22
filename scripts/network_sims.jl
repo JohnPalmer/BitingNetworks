@@ -2,8 +2,6 @@ using Random, Distributions
 using ProgressMeter, Plots, StatsPlots
 gr()
 
-include("src/biting_network_functions.jl")
-
 Threads.nthreads()
 
 Random.seed!(123)
@@ -172,7 +170,7 @@ end
 
 max_bites = maximum([maximum(x[4]) for x in scenario_results])
 
-these_bite_plots = [density(x[4], xaxis = ("N Bites", (0, max_bites), 0:40:max_bites), yaxis = ("Density", (0, .06)), legend=:none) for x in scenario_results]
+these_bite_plots = [density(x[4], xaxis = ("N Bites", (0, max_bites), 0:40:max_bites), yaxis = ("Density", (0, .09)), legend=:none) for x in scenario_results]
 
 l = @layout [a f; b g; c h; d i; e j]
 
