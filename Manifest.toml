@@ -39,6 +39,14 @@ version = "1.0.0"
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[Bites]]
+deps = ["Distributions"]
+git-tree-sha1 = "fe3732148235196826a7cfbe055d439e795a8f7c"
+repo-rev = "main"
+repo-url = "https://github.com/h-mip/Bites.jl"
+uuid = "2f663d54-bd46-4a48-a0cb-d4db94f332c6"
+version = "0.1.0"
+
 [[Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "c3598e525718abcc440f69cc6d5f60dda0a1b61e"
