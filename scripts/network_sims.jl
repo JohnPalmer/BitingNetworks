@@ -6,10 +6,10 @@ Threads.nthreads()
 
 Random.seed!(123)
 
-n_steps = 100
-n_reps = 100
-n_humans = 500
-n_mosquitoes = 2000
+n_steps = 50
+n_reps = 15
+n_humans = 1000
+n_mosquitoes = 10000
 
 # how long before infected human recovers
 human_infection_time = 3
@@ -18,17 +18,31 @@ human_infection_time = 3
 mosquito_life_span = 20
 
 neg_bin_r = 2
-neg_bin_p = .2
+neg_bin_p = .1
 
-transmission_prob = .2
+neg_bin_r_a = 5
+neg_bin_p_a = .2
+
+neg_bin_r_b = 10
+neg_bin_p_b = .35
+
+transmission_prob = .1
 
 human_distribution = NegativeBinomial(neg_bin_r, neg_bin_p)
+
+human_distribution_a = NegativeBinomial(neg_bin_r_a, neg_bin_p_a)
+
+human_distribution_b = NegativeBinomial(neg_bin_r_b, neg_bin_p_b)
 
 # human_distribution = Beta(2, 5)
 # mosquito_distribution = Beta(.2, 2)
 mosquito_probs1 = fill(1/n_humans, (n_mosquitoes,1))
 
 human_probs1 = rand(human_distribution, n_humans)/(sum(mosquito_probs1))
+
+human_probs1a = rand(human_distribution_a, n_humans)/(sum(mosquito_probs1))
+
+human_probs1b = rand(human_distribution_b, n_humans)/(sum(mosquito_probs1))
 
 human_probs2 = fill(mean(human_probs1), (n_humans,1))
 mosquito_probs2 = fill(mean(mosquito_probs1), (n_mosquitoes,1))
@@ -43,7 +57,7 @@ mosquito_probs3 = rand(mosquito_distribution3, n_mosquitoes)
 
 scenario_results = []
 
-scenarios = [[mosquito_probs1, human_probs1],[mosquito_probs2, human_probs2], [mosquito_probs3, human_probs3] ]
+scenarios = [[mosquito_probs1, human_probs1],[mosquito_probs1, human_probs1a], [mosquito_probs1, human_probs1b],[mosquito_probs2, human_probs2], [mosquito_probs3, human_probs3] ]
 
 scenario = scenarios[3]
 
@@ -204,22 +218,30 @@ R0 = [x[2] for x in scenario_results]
 
 scenario_results[1][6][:,n_steps] .+ scenario_results[1][1][:,n_steps] 
 
-AR = [ quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])  for x in scenario_results]
+AR = [ [mean(x[6][:,n_steps] .+ x[1][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])]  for x in scenario_results]
 
 mean_bites_per_person = [mean(x[4]) for x in scenario_results]
 
 
 these_plots = []
 
+this_max = maximum([maximum(x[1]) for x in scenario_results])
+
 for i in 1:length(scenarios)
   n_human_infections_reps = scenario_results[i][1]
   n_human_infections_reps_median = transpose(median(n_human_infections_reps, dims=1))
 
-  this_p = plot(1:n_steps, transpose(n_human_infections_reps), w=.2, color=:grey, legend=:none)
+  this_p = plot(1:n_steps, transpose(n_human_infections_reps), w=.2, color=:grey, legend=:none, yaxis = ("Infected", (0, this_max)), xaxis = ("Time"))
 
   plot!(this_p, 1:n_steps,n_human_infections_reps_median, w=2, color=:black)
 
   push!(these_plots, this_p)
 end
 
-plot(these_plots[1], these_plots[2], these_plots[3], density(scenario_results[1][4]), density(scenario_results[2][4]), density(scenario_results[3][4]))
+max_bites = maximum([maximum(x[4]) for x in scenario_results])
+
+these_bite_plots = [density(x[4], xaxis = ("N Bites", (0, max_bites), 0:40:max_bites), yaxis = ("Density", (0, .1), 0:.02:.1), legend=:none) for x in scenario_results]
+
+l = @layout [a b c d e; f g h i j]
+
+plot(these_plots[1], these_plots[2], these_plots[3],these_plots[4], these_plots[5], these_bite_plots[1], these_bite_plots[2], these_bite_plots[3], these_bite_plots[4], these_bite_plots[5], layout = l)
