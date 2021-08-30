@@ -2,12 +2,14 @@ using Random, Distributions
 using ProgressMeter, Plots, StatsPlots
 gr()
 
+using Bites
+
 Threads.nthreads()
 
 Random.seed!(123)
 
 n_steps = 50
-n_reps = 60
+n_reps = 300
 n_humans = 1000
 n_mosquitoes = 4000
 
@@ -140,7 +142,7 @@ end
 
 mosquito_R0 = mean(R0s)
 
-scenario_result = [n_human_infections_reps, human_R0, mosquito_R0, human_bite_distribution, mosquito_bite_distribution, n_human_recovered_reps]
+scenario_result = (n_human_infections_reps=n_human_infections_reps, human_R0=human_R0, mosquito_R0=mosquito_R0, human_bite_distribution=human_bite_distribution, mosquito_bite_distribution=mosquito_bite_distribution, n_human_recovered_reps=n_human_recovered_reps)
 
 push!(scenario_results, scenario_result)
 
@@ -157,13 +159,15 @@ these_plots = []
 
 this_max = maximum([maximum(x[1]) for x in scenario_results])
 
+this_max = 100*cld(this_max, 100)
+
 for i in 1:length(scenarios)
   n_human_infections_reps = scenario_results[i][1]
   n_human_infections_reps_median = transpose(median(n_human_infections_reps, dims=1))
 
-  this_p = plot(1:n_steps, transpose(n_human_infections_reps), w=.2, color=:grey, legend=:none, yaxis = ("Infected", (0, this_max)), xaxis = ("Time"))
+  this_p = plot(1:n_steps, transpose(n_human_infections_reps), w=.2, color=:grey, legend=:none, yaxis = ("Infected", (0, this_max), 0:100:this_max), xaxis = ("Time"))
 
-  plot!(this_p, 1:n_steps,n_human_infections_reps_median, w=2, color=:black)
+  plot!(this_p, 1:n_steps,n_human_infections_reps_median, w=2, color=:black, yaxis = ("Infected", (0, this_max), 0:100:this_max))
 
   push!(these_plots, this_p)
 end
