@@ -82,7 +82,6 @@ for scenario in scenarios
     bn[this_row, this_col] = rand(Bernoulli( ifelse(joint_prob<1, joint_prob, 1)), 1)[1]
   end
 
-
   mosquito_bite_distribution = transpose(sum(bn, dims=1))
 
   human_bite_distribution = sum(bn, dims=2)
@@ -157,7 +156,10 @@ mean_bites_per_person = [mean(x[4]) for x in scenario_results]
 
 these_plots = []
 
-this_max = maximum([maximum(x[1]) for x in scenario_results])
+this_max = maximum([maximum(x[1],dims =1) for x in scenario_results])
+
+max(1, 2, 3)
+
 
 this_max = 100*cld(this_max, 100)
 
