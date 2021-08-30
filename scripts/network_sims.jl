@@ -1,5 +1,5 @@
 using Random, Distributions
-using ProgressMeter, Plots, StatsPlots
+using ProgressMeter, Plots, StatsPlots, KernelDensity
 gr()
 
 using Bites
@@ -13,7 +13,9 @@ n_reps = 300
 n_humans = 1000
 n_mosquitoes = 4000
 
-transmission_prob = .06
+transmission_prob = .4
+
+expected_bites = n_mosquitoes*2.0
 
 # how long before infected human recovers
 const human_infection_time = 3
@@ -21,45 +23,28 @@ const human_infection_time = 3
 # how long do mosquitoes live. Since mosquitoes do not usually get accute arbovirus infections, the life span is the key: They will go from susceptible->infected->dead/reborn. (With assumption of population stability, deaths simply put the agent back to susceptible status.) "Unlike arboviral infections in humans, which are usually acute, arboviral infections in mosquitoes are persistent. Once the infection is established, the mosquito remains infected for the rest of its life." https://www.sciencedirect.com/science/article/pii/S1931312819303701
 const mosquito_life_span = 20
 
-const neg_bin_r = 2
-const neg_bin_p = .1
-
-const neg_bin_r_a = 5
-const neg_bin_p_a = .21
-
-const neg_bin_r_b = 10
-const neg_bin_p_b = .35
-
-human_distribution = NegativeBinomial(neg_bin_r, neg_bin_p)
-
-human_distribution_a = NegativeBinomial(neg_bin_r_a, neg_bin_p_a)
-
-human_distribution_b = NegativeBinomial(neg_bin_r_b, neg_bin_p_b)
-
-# human_distribution = Beta(2, 5)
-# mosquito_distribution = Beta(.2, 2)
-mosquito_probs1 = fill(1/n_humans, n_mosquitoes)
-
-human_probs1 = rand(human_distribution, n_humans)/(sum(mosquito_probs1))
-
-human_probs1a = rand(human_distribution_a, n_humans)/(sum(mosquito_probs1))
-
-human_probs1b = rand(human_distribution_b, n_humans)/(sum(mosquito_probs1))
-
-human_probs2 = fill(mean(human_probs1), n_humans)
-mosquito_probs2 = fill(mean(mosquito_probs1), n_mosquitoes)
+HD_const, MD_const = distribute_bite_probabilities( (1/n_mosquitoes):(1/n_mosquitoes), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)
 
 
-human_distribution3 = Uniform(0, mean(human_probs1)*2)
-mosquito_distribution3 = Uniform(0, mean(mosquito_probs1)*2)
+HD_uniform_0_1, MD_const = distribute_bite_probabilities(Distributions.Uniform(0,1), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)
 
-human_probs3 = rand(human_distribution3, n_humans)
-mosquito_probs3 = rand(mosquito_distribution3, n_mosquitoes)
+HD_levy_1_0001, MD_const = distribute_bite_probabilities(Distributions.Levy(1, .0001), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)
+
+HD_exp05, MD_const = distribute_bite_probabilities(Distributions.Exponential(1/.5), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)
+
+
+HD_truncnormal_1_3 = distribute_bite_probabilities(Truncated(Normal(1, 3), 0, Inf), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)[1]
 
 
 scenario_results = []
 
-scenarios = [[mosquito_probs1, human_probs1],[mosquito_probs1, human_probs1a], [mosquito_probs1, human_probs1b],[mosquito_probs2, human_probs2], [mosquito_probs3, human_probs3] ]
+scenarios = ( 
+  constant= [MD_const, HD_const],
+  uniform = [MD_const, HD_uniform_0_1],
+  trunnorm = [MD_const, HD_truncnormal_1_3],
+  exp = [MD_const, HD_exp05],
+  levy = [MD_const, HD_levy_1_0001])
+
 
 scenario = scenarios[4]
 
@@ -125,6 +110,10 @@ for scenario in scenarios
 
 human_R0 = mean(R0s)
 
+human_R0_converg_check = Vector(undef, n_reps)
+for i in 1:n_reps
+  human_R0_converg_check[i] = mean(R0s[1:i])
+end
 
 R0s = Vector(undef, n_reps)
 
@@ -141,7 +130,13 @@ end
 
 mosquito_R0 = mean(R0s)
 
-scenario_result = (n_human_infections_reps=n_human_infections_reps, human_R0=human_R0, mosquito_R0=mosquito_R0, human_bite_distribution=human_bite_distribution, mosquito_bite_distribution=mosquito_bite_distribution, n_human_recovered_reps=n_human_recovered_reps)
+mosquito_R0_converg_check = Vector(undef, n_reps)
+for i in 1:n_reps
+  mosquito_R0_converg_check[i] = mean(R0s[1:i])
+end
+
+
+scenario_result = (n_human_infections_reps=n_human_infections_reps, human_R0=human_R0, mosquito_R0=mosquito_R0, human_bite_distribution=human_bite_distribution, mosquito_bite_distribution=mosquito_bite_distribution, n_human_recovered_reps=n_human_recovered_reps, human_R0_converg_check=human_R0_converg_check, mosquito_R0_converg_check=mosquito_R0_converg_check)
 
 push!(scenario_results, scenario_result)
 
@@ -149,35 +144,55 @@ end
 
 R0 = [x[2] for x in scenario_results]
 
-AR = [ [mean(x[6][:,n_steps] .+ x[1][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])]  for x in scenario_results]
+AR = [ [mean(x[6][:,n_steps] .+ x[1][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])] for x in scenario_results]
+
+AR_convergence_check = [mean(x[6][1:i,n_steps] .+ x[1][1:i,n_steps]) for x in scenario_results, i in 1:n_reps]
+
+plot(transpose(AR_convergence_check), label=reshape([string("S", x) for x in 1:length(scenario_results)], 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean Attack Rate")
+plot!(size=(800,600))
+png("plots/AR_convergence_check_plot.png")
+
+human_R0_convergence_checks = [mean(x[:human_R0_converg_check][1:i]) for x in scenario_results, i in 1:n_reps]
+
+these_labs = [string(x) for x in keys(scenarios)]
+
+plot(transpose(human_R0_convergence_checks), label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean R0", legend=:bottomright, linewidth=2)
+plot!(size=(800,600))
+png("plots/R0_convergence_check_plot.png")
+
 
 mean_bites_per_person = [mean(x[4]) for x in scenario_results]
 
+max_bites_per_person = [maximum(x[4]) for x in scenario_results]
+
+
+maximum(scenario_results[1][1])
 
 these_plots = []
 
-this_max = maximum([maximum(x[1],dims =1) for x in scenario_results])
+this_max = maximum([maximum(x[1]) for x in scenario_results])
 
-max(1, 2, 3)
-
-
-this_max = 100*cld(this_max, 100)
+steps_to_plot = 15
 
 for i in 1:length(scenarios)
-  n_human_infections_reps = scenario_results[i][1]
+  n_human_infections_reps = scenario_results[i][1]./n_humans
   n_human_infections_reps_median = transpose(median(n_human_infections_reps, dims=1))
 
-  this_p = plot(1:n_steps, transpose(n_human_infections_reps), w=.2, color=:grey, legend=:none, yaxis = ("Infected", (0, this_max), 0:100:this_max), xaxis = ("Time"))
+  this_p = plot(1:steps_to_plot, transpose(n_human_infections_reps[ :, 1:steps_to_plot]), w=.2, color=:grey, legend=:none, yaxis = ("Infected", (0, 1), 0:.5:1), xaxis = ("Time"))
 
-  plot!(this_p, 1:n_steps,n_human_infections_reps_median, w=2, color=:black, yaxis = ("Infected", (0, this_max), 0:100:this_max))
+  plot!(this_p, 1:steps_to_plot,n_human_infections_reps_median[1:steps_to_plot], w=2, color=:black, yaxis = ("Infected", (0, 1), 0:.2:1))
 
   push!(these_plots, this_p)
 end
 
 max_bites = maximum([maximum(x[4]) for x in scenario_results])
 
-these_bite_plots = [density(x[4], xaxis = ("N Bites", (0, max_bites), 0:40:max_bites), yaxis = ("Density", (0, .09)), legend=:none) for x in scenario_results]
+kd_max = maximum(kde(vec(scenario_results[1][4])).density)
+
+these_bite_plots = [density(scenario_results[i][:human_bite_distribution], xaxis = ("N Bites", (0, max_bites), 0:50:max_bites), yaxis = ("Density", (-0.01, kd_max)), legend=:none, normed=true, linewidth=2, title=these_labs[i]) for i in 1:length(scenario_results)]
 
 l = @layout [a f; b g; c h; d i; e j]
 
 plot(these_plots[1], these_bite_plots[1], these_plots[2], these_bite_plots[2], these_plots[3], these_bite_plots[3],these_plots[4], these_bite_plots[4], these_plots[5], these_bite_plots[5], layout = l)
+plot!(size=(800,800))
+png("plots/epicurve_comparison.png")
