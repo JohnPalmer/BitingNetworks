@@ -1,5 +1,5 @@
 using Random, Distributions
-using ProgressMeter, Plots, StatsPlots, KernelDensity
+using ProgressMeter, Plots, StatsPlots, KernelDensity, Bootstrap
 gr()
 
 using Bites
@@ -36,12 +36,15 @@ HD_exp05, MD_const = distribute_bite_probabilities(Distributions.Exponential(1/.
 HD_truncnormal_1_3 = distribute_bite_probabilities(Truncated(Normal(1, 3), 0, Inf), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)[1]
 
 
+HD_trunclevy_1_3 = distribute_bite_probabilities(Truncated(Levy(1.1, 3), 1, 1000), (1/n_humans):(1/n_humans), n_humans, n_mosquitoes, expected_bites)[1]
+
+
 scenario_results = []
 
 scenarios = ( 
   constant= [MD_const, HD_const],
   uniform = [MD_const, HD_uniform_0_1],
-  trunnorm = [MD_const, HD_truncnormal_1_3],
+  trunclevy = [MD_const, HD_trunclevy_1_3],
   exp = [MD_const, HD_exp05],
   levy = [MD_const, HD_levy_1_0001])
 
@@ -142,7 +145,19 @@ push!(scenario_results, scenario_result)
 
 end
 
+human_R0_convergence_checks = [mean(x[:human_R0_converg_check][1:i]) for x in scenario_results, i in 1:n_reps]
+
 R0 = [x[2] for x in scenario_results]
+
+n_boot = 1000
+human_R0_boot = [stderror(bootstrap(mean, x[:human_R0_converg_check], BasicSampling(n_boot))) for x in scenario_results]
+
+these_labs = [string(x) for x in keys(scenarios)]
+
+plot(transpose(human_R0_convergence_checks), label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean R0", legend=:bottomright, linewidth=2)
+plot!(size=(800,600))
+png("plots/R0_convergence_check_plot.png")
+
 
 AR = [ [mean(x[6][:,n_steps] .+ x[1][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])] for x in scenario_results]
 
@@ -152,13 +167,6 @@ plot(transpose(AR_convergence_check), label=reshape([string("S", x) for x in 1:l
 plot!(size=(800,600))
 png("plots/AR_convergence_check_plot.png")
 
-human_R0_convergence_checks = [mean(x[:human_R0_converg_check][1:i]) for x in scenario_results, i in 1:n_reps]
-
-these_labs = [string(x) for x in keys(scenarios)]
-
-plot(transpose(human_R0_convergence_checks), label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean R0", legend=:bottomright, linewidth=2)
-plot!(size=(800,600))
-png("plots/R0_convergence_check_plot.png")
 
 
 mean_bites_per_person = [mean(x[4]) for x in scenario_results]

@@ -3,6 +3,7 @@ authors = ["John Palmer"]
 
 [deps]
 Bites = "2f663d54-bd46-4a48-a0cb-d4db94f332c6"
+Bootstrap = "e28b5b4c-05e8-5b66-bc03-6f0c0a0a06e0"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
