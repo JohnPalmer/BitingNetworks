@@ -50,11 +50,13 @@ human_distributions = (
   tlevy6p1 = Truncated(Levy(6.1, .0001), 1, 1000),
 )
 
+this_set_name = "cueml16"
+
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
 this_sim_dict_a = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span
 
-this_sim_dict = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span human_distribution_names
+this_sim_dict = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span this_set_name
 
 hdi = 1
 
