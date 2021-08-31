@@ -13,7 +13,7 @@ n_reps = 1000
 n_humans = 1000
 n_mosquitoes = 4000
 
-transmission_prob = .09
+transmission_prob = .15
 
 expected_bites = float(n_mosquitoes)
 
