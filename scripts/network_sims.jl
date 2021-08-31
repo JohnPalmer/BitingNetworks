@@ -13,9 +13,9 @@ n_reps = 600
 n_humans = 10000
 n_mosquitoes = 40000
 
-transmission_prob = .04
+transmission_prob = .2
 
-expected_bites = n_mosquitoes*2.0
+expected_bites = float(n_mosquitoes)
 
 # how long before infected human recovers
 const human_infection_time = 3
@@ -42,16 +42,16 @@ human_distributions = (
   uniform = Uniform(0,1),
   exp = Exponential(1/.5),
   tlevy1p1 = Truncated(Levy(1.1, .0001), 1, 1000),
-  levy1p1 = Levy(1.1, .0001),
-  levy2p1 = Levy(2.1, .0001),
-  levy3p1 = Levy(3.1, .0001),
+  tlevy2p1 = Truncated(Levy(2.1, .0001), 1, 1000),
+  tlevy3p1 = Truncated(Levy(3.1, .0001), 1, 1000),
   mixed_norms = vcat(subpop_a, subpop_b)
 )
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
-# savename(this_sim_dict)
+this_sim_dict_a = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span
 
+this_sim_dict = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span human_distribution_names
 
 hdi = 1
 
@@ -146,7 +146,7 @@ these_labs = [string(x) for x in keys(human_distributions)]
 
 plot(human_R0_convergence_checks, label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
 plot!(size=(800,600))
-png("plots/R0_convergence_check_plot.png")
+png(string("plots/R0_conv", savename(this_sim_dict), ".png"))
 
 
 AR = [ [mean(x[:n_human_recovered_reps][:,n_steps] .+ x[:n_human_infections_reps][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])] for x in scenario_results]
@@ -155,7 +155,7 @@ AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_hum
 
 plot(transpose(AR_convergence_check), label=label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
 plot!(size=(800,600))
-png("plots/AR_convergence_check_plot.png")
+png(string("plots/AR_conv", savename(this_sim_dict), ".png"))
 
 
 
@@ -164,52 +164,3 @@ mean_bites_per_person = [mean(x[4]) for x in scenario_results]
 max_bites_per_person = [maximum(x[4]) for x in scenario_results]
 
 
-maximum(scenario_results[1][1])
-
-using Plots.PlotMeasures
-these_plots = []
-
-this_max = maximum([maximum(x[1]) for x in scenario_results])
-
-steps_to_plot = 15
-
-for i in 1:length(human_distributions)
-  n_human_infections_reps = scenario_results[i][1]./n_humans
-  n_human_infections_reps_median = transpose(median(n_human_infections_reps, dims=1))
-
-  this_p = plot(1:steps_to_plot, transpose(n_human_infections_reps[ :, 1:steps_to_plot]), w=.2, color=:grey, legend=:none, yaxis = ("Infected", (0, 1), 0:.5:1), xaxis = ("Time"), margin = 1cm)
-
-
-  plot!(this_p, 1:steps_to_plot,n_human_infections_reps_median[1:steps_to_plot], w=2, color=:black, yaxis = ("Infected", (0, 1), 0:.2:1))
-
-  push!(these_plots, this_p)
-end
-
-max_bites = maximum([maximum(x[4]) for x in scenario_results])
-
-kd_max = maximum(kde(vec(scenario_results[1][4])).density)
-
-these_bite_plots = [density(scenario_results[i][:human_bite_distribution], xaxis = ("N Bites", (0, max_bites), 0:ceil(max_bites/10):max_bites), yaxis = ("Density", (-0.01, kd_max)), legend=:none, normed=true, linewidth=2, title=these_labs[i], margin = 1cm) for i in 1:length(scenario_results)]
-
-
-this_p = plot( 
-  these_bite_plots[1], 
-  these_plots[1], 
-  these_bite_plots[2], 
-  these_plots[2], 
-  these_bite_plots[3], 
-  these_plots[3], 
-  these_bite_plots[4], 
-  these_plots[4], 
-  these_bite_plots[5], 
-  these_plots[5], 
-  these_bite_plots[6], 
-  these_plots[6], 
-  these_bite_plots[7], 
-  these_plots[7], 
-  these_bite_plots[8], 
-  these_plots[8], 
-  layout=(8,2)
-)
-plot!(this_p, size=(800,2000))
-savefig(this_p, "plots/epicurve_comparison.html")
