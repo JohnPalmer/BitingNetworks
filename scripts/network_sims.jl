@@ -8,7 +8,7 @@ Threads.nthreads()
 
 Random.seed!(123)
 
-n_steps = 50
+n_steps = 1000
 n_reps = 1000
 n_humans = 1000
 n_mosquitoes = 4000
@@ -161,6 +161,18 @@ Plots.plot(human_R0_convergence_checks, label=reshape(these_labs, 1, length(scen
 Plots.plot!(size=(800,600))
 png(string("plots/R0_conv", savename(this_sim_dict), ".png"))
 
+# AR box plot
+# AR Convergence
+ARs = [mean(x.n_human_recovered_reps[:,n_steps] .+ x.n_human_infections_reps[:,n_steps])/n_humans for x in scenario_results, i in 1:1000]
+
+
+ARs_df = DataFrame(ARs', these_labs) 
+
+ARs_df_long = stack(ARs_df, 1:length(these_labs))
+this_p = @df ARs_df_long boxplot(:variable, :value, ylabel="AR", legend=:none)
+png(this_p, string("plots/AR_boot_", savename(this_sim_dict), ".png"))
+
+
 # AR Convergence
 AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_human_infections_reps][1:i,n_steps])/n_humans for x in scenario_results, i in 1:n_reps]
 
@@ -220,3 +232,5 @@ bites_per_mosquito_ll50 = [quantile(vec(x.mosquito_bite_distribution), .25) for 
 CSV.write(datadir("sim_summaries", savename(this_sim_dict, "csv")), summary_estimates)
 
 @tagsave(datadir("sim_summaries", savename(this_sim_dict, "jld2")), tostringdict(struct2dict(summary_estimates)), safe=true)
+
+vscodedisplay(summary_estimates)
