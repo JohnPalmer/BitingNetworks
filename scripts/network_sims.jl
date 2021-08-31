@@ -1,7 +1,7 @@
 using DrWatson
 quickactivate(@__DIR__, "BitingNetworks")
 using Bites, Random, Distributions
-using ProgressMeter, Plots, StatsPlots, KernelDensity, Bootstrap
+using ProgressMeter, Plots, StatsPlots, KernelDensity, DataFrames, CSV
 plotlyjs()
 
 Threads.nthreads()
@@ -9,11 +9,11 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_steps = 50
-n_reps = 600
-n_humans = 10000
-n_mosquitoes = 40000
+n_reps = 1000
+n_humans = 1000
+n_mosquitoes = 4000
 
-transmission_prob = .2
+transmission_prob = .09
 
 expected_bites = float(n_mosquitoes)
 
@@ -41,10 +41,13 @@ human_distributions = (
   constant = (1/n_mosquitoes):(1/n_mosquitoes),
   uniform = Uniform(0,1),
   exp = Exponential(1/.5),
+  mixed_norms = vcat(subpop_a, subpop_b),
   tlevy1p1 = Truncated(Levy(1.1, .0001), 1, 1000),
   tlevy2p1 = Truncated(Levy(2.1, .0001), 1, 1000),
   tlevy3p1 = Truncated(Levy(3.1, .0001), 1, 1000),
-  mixed_norms = vcat(subpop_a, subpop_b)
+  tlevy4p1 = Truncated(Levy(4.1, .0001), 1, 1000),
+  tlevy5p1 = Truncated(Levy(5.1, .0001), 1, 1000),
+  tlevy6p1 = Truncated(Levy(6.1, .0001), 1, 1000),
 )
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
@@ -129,38 +132,89 @@ scenario_result = (
   mosquito_dist_name = mosquito_distribution_name
   )
 
-@tagsave(datadir("sims", savename(scenario_result, "jld2")), tostringdict(ntuple2dict(scenario_result)))
+@tagsave(datadir("sims", savename(scenario_result, "jld2")), tostringdict(ntuple2dict(scenario_result)), safe=true)
 
 push!(scenario_results, scenario_result)
 
 end
 
+## SUMMARY ANALYSIS ##
 
-####
-human_R0_convergence_checks = [x[:human_R0_converge_check] for x in scenario_results]
-
-
-R0 = [x.human_R0 for x in scenario_results]
-
+# main labels
 these_labs = [string(x) for x in keys(human_distributions)]
 
-plot(human_R0_convergence_checks, label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
-plot!(size=(800,600))
+# Bootstrap R0
+R0_boot_reps = [mean(rand(x.human_R0_reps, length(x.human_R0_reps))) for i in 1:1000, x in scenario_results]
+
+R0_boot = DataFrame(R0_boot_reps, these_labs) 
+
+R0_boot_long = stack(R0_boot, 1:length(these_labs))
+this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none)
+png(this_p, string("plots/R0_boot_", savename(this_sim_dict), ".png"))
+
+# R0 Convergence
+human_R0_convergence_checks = [x[:human_R0_converge_check] for x in scenario_results]
+
+Plots.plot(human_R0_convergence_checks, label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
+Plots.plot!(size=(800,600))
 png(string("plots/R0_conv", savename(this_sim_dict), ".png"))
 
+# AR Convergence
+AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_human_infections_reps][1:i,n_steps])/n_humans for x in scenario_results, i in 1:n_reps]
 
-AR = [ [mean(x[:n_human_recovered_reps][:,n_steps] .+ x[:n_human_infections_reps][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])] for x in scenario_results]
-
-AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_human_infections_reps][1:i,n_steps]) for x in scenario_results, i in 1:n_reps]
-
-plot(transpose(AR_convergence_check), label=label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
-plot!(size=(800,600))
+Plots.plot(transpose(AR_convergence_check), label=label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
+Plots.plot!(size=(800,600))
 png(string("plots/AR_conv", savename(this_sim_dict), ".png"))
 
+# Point estimate summary
+
+summary_estimates = DataFrame(
+
+human_distribution = these_labs,
+
+R0 = [x.human_R0 for x in scenario_results],
+
+R0_ul90 = [quantile(R0_boot_reps[:, i], .95) for i in 1:length(scenario_results)],
+
+R0_ll90 = [quantile(R0_boot_reps[:, i], .05) for i in 1:length(scenario_results)],
+
+AR = [mean(x[:n_human_recovered_reps][:,n_steps] .+ x[:n_human_infections_reps][:,n_steps])/n_humans for x in scenario_results],
+
+AR_ul90 = [quantile(x[:n_human_recovered_reps][:,n_steps] .+ x[:n_human_infections_reps][:,n_steps], .95)/n_humans for x in scenario_results],
+
+AR_ll90 = [quantile(x[:n_human_recovered_reps][:,n_steps] .+ x[:n_human_infections_reps][:,n_steps], .05)/n_humans for x in scenario_results],
 
 
-mean_bites_per_person = [mean(x[4]) for x in scenario_results]
+bites_per_person_mean = [mean(x.human_bite_distribution) for x in scenario_results],
 
-max_bites_per_person = [maximum(x[4]) for x in scenario_results]
+bites_per_person_max = [maximum(x.human_bite_distribution) for x in scenario_results],
+
+bites_per_person_min = [minimum(x.human_bite_distribution) for x in scenario_results],
+
+bites_per_person_ul90 = [quantile(vec(x.human_bite_distribution), .95) for x in scenario_results],
+
+bites_per_person_ll90 = [quantile(vec(x.human_bite_distribution), .05) for x in scenario_results],
+
+bites_per_person_ul50 = [quantile(vec(x.human_bite_distribution), .75) for x in scenario_results],
+
+bites_per_person_ll50 = [quantile(vec(x.human_bite_distribution), .25) for x in scenario_results],
+
+bites_per_mosquito_mean = [mean(x.mosquito_bite_distribution) for x in scenario_results],
+
+bites_per_mosquito_max = [maximum(x.mosquito_bite_distribution) for x in scenario_results],
+
+bites_per_mosquito_min = [minimum(x.mosquito_bite_distribution) for x in scenario_results],
+
+bites_per_mosquito_ul90 = [quantile(vec(x.mosquito_bite_distribution), .95) for x in scenario_results],
+
+bites_per_mosquito_ll90 = [quantile(vec(x.mosquito_bite_distribution), .05) for x in scenario_results],
+
+bites_per_mosquito_ul50 = [quantile(vec(x.mosquito_bite_distribution), .75) for x in scenario_results],
+
+bites_per_mosquito_ll50 = [quantile(vec(x.mosquito_bite_distribution), .25) for x in scenario_results]
+)
 
 
+CSV.write(datadir("sim_summaries", savename(this_sim_dict, "csv")), summary_estimates)
+
+@tagsave(datadir("sim_summaries", savename(this_sim_dict, "jld2")), tostringdict(struct2dict(summary_estimates)), safe=true)

@@ -1,3 +1,5 @@
+these_labs = [string(x) for x in keys(human_distribution)]
+
 
 maximum(scenario_results[1][1])
 
