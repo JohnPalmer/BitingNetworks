@@ -9,11 +9,11 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_steps = 50
-n_reps = 300
-n_humans = 1000
-n_mosquitoes = 4000
+n_reps = 600
+n_humans = 10000
+n_mosquitoes = 40000
 
-transmission_prob = .4
+transmission_prob = .04
 
 expected_bites = n_mosquitoes*2.0
 
@@ -151,7 +151,7 @@ png("plots/R0_convergence_check_plot.png")
 
 AR = [ [mean(x[:n_human_recovered_reps][:,n_steps] .+ x[:n_human_infections_reps][:,n_steps]), quantile(x[6][:,n_steps] .+ x[1][:,n_steps], [.025, .25, .5, .75, .975])] for x in scenario_results]
 
-AR_convergence_check = [mean(x[n_human_recovered_reps][:n_human_infections_reps:i,n_steps] .+ x[1][1:i,n_steps]) for x in scenario_results, i in 1:n_reps]
+AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_human_infections_reps][1:i,n_steps]) for x in scenario_results, i in 1:n_reps]
 
 plot(transpose(AR_convergence_check), label=label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
 plot!(size=(800,600))
