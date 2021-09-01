@@ -8,12 +8,12 @@ Threads.nthreads()
 
 Random.seed!(123)
 
-const n_s = 1000 # number of time steps (e.g. days)
-const n_r = 1000 # number of repetitions to simulate
+const n_s = 1 # number of time steps (e.g. days)
+const n_r = 1 # number of repetitions to simulate
 const n_h = 1000 # number of humans in population
 const n_m = 4000 # number of mosquitoes in population
 
-const tp = .3 # transmission probability
+const tp = .17 # transmission probability
 
 const eb = float(n_m) # expected bites
 
