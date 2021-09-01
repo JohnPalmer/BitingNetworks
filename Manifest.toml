@@ -59,11 +59,11 @@ version = "0.5.10"
 
 [[Bites]]
 deps = ["Distributions", "Random", "Revise", "Statistics"]
-git-tree-sha1 = "3598592a6e87284e303c1743f22a11f86a8fe95a"
+git-tree-sha1 = "cf6ff5a7681c13718faf9a25c57eb2dee496f408"
 repo-rev = "main"
 repo-url = "https://github.com/h-mip/Bites.jl"
 uuid = "2f663d54-bd46-4a48-a0cb-d4db94f332c6"
-version = "0.1.5"
+version = "0.1.6"
 
 [[Blink]]
 deps = ["Base64", "BinDeps", "Distributed", "JSExpr", "JSON", "Lazy", "Logging", "MacroTools", "Mustache", "Mux", "Reexport", "Sockets", "WebIO", "WebSockets"]
