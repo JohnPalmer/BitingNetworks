@@ -10,12 +10,12 @@ Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
 n_r = 1000 # number of repetitions to simulate
-n_h = 100 # number of humans in population
-n_m = 800 # number of mosquitoes in population
+n_h = 1000 # number of humans in population
+n_m = 8000 # number of mosquitoes in population
 
 tp = .17 # transmission probability
 
-eb = float(n_m*4) # expected total bites per time step
+eb = float(n_m*3) # expected total bites per time step
 
 # how long before infected human recovers
 hit = 3
