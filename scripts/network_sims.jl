@@ -13,7 +13,7 @@ const n_r = 4000 # number of repetitions to simulate
 const n_h = 4000 # number of humans in population
 const n_m = 8000 # number of mosquitoes in population
 
-const tp = .15 # transmission probability
+const tp = .3 # transmission probability
 
 const eb = float(n_m) # expected bites
 
@@ -274,7 +274,7 @@ bd_mat = Matrix(undef, n_h, length(scenario_results))
 for i in 1:length(scenario_results)
   bd_mat[:, i] = vec(scenario_results[i].human_bite_distribution)
 end
-bd_df = DataFrame(bd_mat, human_distribution_names)
+bd_df = DataFrame(bd_mat, these_labs)
 
 CSV.write(datadir("sim_summaries", string("human_bite_distributions_", savename(this_sim_dict, "csv"))), bd_df)
 
@@ -282,6 +282,6 @@ bd_mat = Matrix(undef, n_m, length(scenario_results))
 for i in 1:length(scenario_results)
   bd_mat[:, i] = vec(scenario_results[i].mosquito_bite_distribution)
 end
-bd_df = DataFrame(bd_mat, human_distribution_names)
+bd_df = DataFrame(bd_mat, these_labs)
 
 CSV.write(datadir("sim_summaries", string("mosquito_bite_distributions_", savename(this_sim_dict, "csv"))), bd_df)
