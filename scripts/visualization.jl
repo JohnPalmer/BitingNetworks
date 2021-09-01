@@ -1,3 +1,13 @@
+using DrWatson
+quickactivate(@__DIR__, "BitingNetworks")
+using DataFrames, CSV
+
+bl = ["error"]
+res = collect_results!(datadir("sims"); black_list = bl, subfolders = true)
+
+
+
+### old
 these_labs = [string(x) for x in keys(human_distribution)]
 
 

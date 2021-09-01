@@ -23,4 +23,8 @@ hbd = read_csv("data/sim_summaries/human_bite_distributions_expected_bites=4000.
 
 ggplot(hbd, aes(x=value, y=variable)) + stat_halfeye() #+ facet_wrap(~measure, scale="free_x"))
 
-ggplot(bind_rows(hbd, plot_data, pop_dist) %>% mutate(measure_f = factor(measure, levels=c("VRI", "Bites per person", "R0", "AR"))), aes(x=value, y=variable, fill=measure_f)) + stat_halfeye(normalize="groups", alpha=.7) + facet_wrap(~measure_f, scale="free_x", nrow = 1) + theme(legend.position="none") + scale_fill_brewer(palette = "Set1")
+plot_data = bind_rows(hbd, plot_data, pop_dist) %>% mutate(measure_f = factor(measure, levels=c("VRI", "Bites per person", "R0", "AR")))
+
+these_medians = plot_data %>% group_by(measure_f) %>% summarise(med = median(value))
+
+ggplot(plot_data, aes(x=value, y=variable, fill=measure_f)) + stat_halfeye(normalize="groups", alpha=.7, point_interval = mean_qi,.width = c(0.66, 0.95)) + facet_wrap(~measure_f, scale="free_x", nrow = 1) + theme(legend.position="none") + scale_fill_brewer(palette = "Set1") + geom_vline(data = these_medians, aes(xintercept=med), lwd=.5, color="yellow") 

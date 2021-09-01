@@ -8,20 +8,20 @@ Threads.nthreads()
 
 Random.seed!(123)
 
-n_steps = 1000
-n_reps = 4000
-n_humans = 4000
-n_mosquitoes = 8000
+const n_s = 1000 # number of time steps (e.g. days)
+const n_r = 4000 # number of repetitions to simulate
+const n_h = 4000 # number of humans in population
+const n_m = 8000 # number of mosquitoes in population
 
-transmission_prob = .15
+const tp = .15 # transmission probability
 
-expected_bites = float(n_mosquitoes)
+const eb = float(n_m) # expected bites
 
 # how long before infected human recovers
-const human_infection_time = 3
+const hit = 3
 
 # how long do mosquitoes live. Since mosquitoes do not usually get accute arbovirus infections, the life span is the key: They will go from susceptible->infected->dead/reborn. (With assumption of population stability, deaths simply put the agent back to susceptible status.) "Unlike arboviral infections in humans, which are usually acute, arboviral infections in mosquitoes are persistent. Once the infection is established, the mosquito remains infected for the rest of its life." https://www.sciencedirect.com/science/article/pii/S1931312819303701
-const mosquito_life_span = 20
+const mls = 20
 
 # Barcelona probabilities from BarcelonaTiger Repository
 bcn_pop = DataFrame(CSV.File("../BarcelonaTiger/data/proc/biting_networks_veri_census_sections_bcn_pop_props.csv"))
@@ -54,7 +54,7 @@ subpop_b = rand(subpop_b_distribution, subpop_b_size)
 scenario_results = []
 
 human_distributions = ( 
-  constant = (1/n_mosquitoes):(1/n_mosquitoes),
+  constant = (1/n_m):(1/n_m),
   uniform = Uniform(0,1),
   exp = Exponential(1/.5),
   mixed_norms = vcat(subpop_a, subpop_b),
@@ -70,13 +70,15 @@ this_set_name = "bcn_probs"
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
-this_sim_dict_a = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span
+this_sim_dict_a = @strdict n_steps n_reps n_humans n_m tp expected_bites hit mls
 
-this_sim_dict = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span this_set_name
+this_sim_dict = @strdict n_steps n_reps n_humans n_m tp expected_bites hit mls this_set_name
 
 # FOR BARCELONA
 human_distributions = human_probs_bcn_set
-human_distribution_names = human_probs_bcn_set_names
+human_distribution_names = [first(replace(x, " " => ""), 5) for x in human_probs_bcn_set_names]
+
+human_distribution_names_long = human_probs_bcn_set_names
 
 hdi = 1
 
@@ -85,7 +87,7 @@ for hdi in 1:length(human_distributions)
   human_distribution = human_distributions[hdi]
   human_distribution_name = human_distribution_names[hdi]
 
-  human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_humans, n_mosquitoes, expected_bites)
+  human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_humans, n_m, expected_bites)
 
   these_iterations = 1:length(human_probs)*length(mosquito_probs)
 
@@ -118,9 +120,9 @@ for hdi in 1:length(human_distributions)
 
   Threads.@threads for r = 1:n_reps
 
-    human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_humans, n_mosquitoes, expected_bites)
+    human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_humans, n_m, expected_bites)
   
-    n_mosquito_infections_reps[r, :], n_human_infections_reps[r, :], n_human_recovered_reps[r, :] = bite_steps(n_steps, n_humans, n_mosquitoes, human_infection_time, mosquito_life_span, human_probs, mosquito_probs, transmission_prob)
+    n_mosquito_infections_reps[r, :], n_human_infections_reps[r, :], n_human_recovered_reps[r, :] = bite_steps(n_steps, n_humans, n_m, hit, mls, human_probs, mosquito_probs, tp)
 
     next!(p)
 
@@ -139,19 +141,19 @@ scenario_result = (
   human_R0_converge_check = human_R0_results.converge_check,
   mosquito_R0_converge_check = mosquito_R0_results.converge_check,
   human_R0_reps = human_R0_results.R0_reps,
-  mosquito_R0_reps= mosquito_R0_results.R0_reps, name = human_distribution_name,
-  n_steps = 50,
-  n_reps = 300,
-  n_humans = 1000,
-  n_mosquitoes = 4000,
-  trans_prob = .4, 
-  exp_bites = n_mosquitoes*2.0,
-  human_infect_time = 3,
-  mosq_life_span = 20,
-  human_dist = human_distribution,
-  human_dist_name = human_distribution_name,
-  mosquito_dist = mosquito_distribution,
-  mosquito_dist_name = mosquito_distribution_name
+  mosquito_R0_reps= mosquito_R0_results.R0_reps,
+  n_s = n_s,
+  n_r = n_r,
+  n_h = n_h,
+  n_m = n_m,
+  tp = tp, 
+  eb = eb,
+  hit = hit,
+  mls = mls,
+  hd = human_distribution,
+  hdn = human_distribution_name,
+  md = mosquito_distribution,
+  mdn = mosquito_distribution_name
   )
 
 @tagsave(datadir("sims", savename(scenario_result, "jld2")), tostringdict(ntuple2dict(scenario_result)), safe=true)
@@ -163,7 +165,7 @@ end
 ## SUMMARY ANALYSIS ##
 
 # main labels
-these_labs = human_distribution_names
+these_labs = human_distribution_names_long
 these_labs[11] = "Barcelona (all)"
 
 # reps to use for checking convergence (upper half)
@@ -276,7 +278,7 @@ bd_df = DataFrame(bd_mat, human_distribution_names)
 
 CSV.write(datadir("sim_summaries", string("human_bite_distributions_", savename(this_sim_dict, "csv"))), bd_df)
 
-bd_mat = Matrix(undef, n_mosquitoes, length(scenario_results))
+bd_mat = Matrix(undef, n_m, length(scenario_results))
 for i in 1:length(scenario_results)
   bd_mat[:, i] = vec(scenario_results[i].mosquito_bite_distribution)
 end
