@@ -9,9 +9,9 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_steps = 1000
-n_reps = 1000
-n_humans = 1000
-n_mosquitoes = 4000
+n_reps = 4000
+n_humans = 4000
+n_mosquitoes = 8000
 
 transmission_prob = .15
 
@@ -166,6 +166,9 @@ end
 these_labs = human_distribution_names
 these_labs[11] = "Barcelona (all)"
 
+# reps to use for checking convergence (upper half)
+conv_reps =  Int(ceil(n_reps/2)):n_reps
+
 # Bootstrap R0
 R0_boot_reps = [mean(rand(x.human_R0_reps, length(x.human_R0_reps))) for i in 1:1000, x in scenario_results]
 
@@ -176,9 +179,9 @@ this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none, 
 png(this_p, string("plots/R0_boot_", savename(this_sim_dict), ".png"))
 
 # R0 Convergence
-human_R0_convergence_checks = [x[:human_R0_converge_check] for x in scenario_results]
+human_R0_convergence_checks = [x[:human_R0_converge_check][conv_reps] for x in scenario_results]
 
-Plots.plot(human_R0_convergence_checks, label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
+Plots.plot(human_R0_convergence_checks, label=:none, xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
 Plots.plot!(size=(800,600))
 png(string("plots/R0_conv", savename(this_sim_dict), ".png"))
 
@@ -206,7 +209,7 @@ CSV.write(datadir("sim_summaries", string("combo_plot_AR_R0_", savename(this_sim
 # AR Convergence
 AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_human_infections_reps][1:i,n_steps])/n_humans for x in scenario_results, i in 1:n_reps]
 
-Plots.plot(transpose(AR_convergence_check), label=label=reshape(these_labs, 1, length(scenario_results)), xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
+Plots.plot(transpose(AR_convergence_check[:, conv_reps]), label=:none, xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
 Plots.plot!(size=(800,600))
 png(string("plots/AR_conv", savename(this_sim_dict), ".png"))
 
