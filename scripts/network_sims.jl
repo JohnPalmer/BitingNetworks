@@ -37,11 +37,11 @@ push!(human_probs_bcn_set, human_probs_bcn)
 human_probs_bcn_set_names = push!(bcn_districts, "bcn_all")
 
 fixed_mosquito_prob = (1/n_humans)
-# mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
-# mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
+mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
+mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
 
-mosquito_distribution = Truncated(Levy(3.1, .0001), 1, 1000)
-mosquito_distribution_name = "tlevy3p1"
+# mosquito_distribution = Truncated(Levy(3.1, .0001), 1, 1000)
+# mosquito_distribution_name = "tlevy3p1"
 
 subpop_a_size = Int(n_humans/2)
 subpop_a_distribution = Truncated(Normal(3, 3), 0, Inf)
@@ -163,7 +163,8 @@ end
 ## SUMMARY ANALYSIS ##
 
 # main labels
-these_labs = [string(x) for x in keys(human_distributions)]
+these_labs = human_distribution_names
+these_labs[11] = "Barcelona (all)"
 
 # Bootstrap R0
 R0_boot_reps = [mean(rand(x.human_R0_reps, length(x.human_R0_reps))) for i in 1:1000, x in scenario_results]
@@ -171,7 +172,7 @@ R0_boot_reps = [mean(rand(x.human_R0_reps, length(x.human_R0_reps))) for i in 1:
 R0_boot = DataFrame(R0_boot_reps, these_labs) 
 
 R0_boot_long = stack(R0_boot, 1:length(these_labs))
-this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none)
+this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none, xrotation=90)
 png(this_p, string("plots/R0_boot_", savename(this_sim_dict), ".png"))
 
 # R0 Convergence
@@ -182,16 +183,25 @@ Plots.plot!(size=(800,600))
 png(string("plots/R0_conv", savename(this_sim_dict), ".png"))
 
 # AR box plot
-# AR Convergence
-ARs = [mean(x.n_human_recovered_reps[:,n_steps] .+ x.n_human_infections_reps[:,n_steps])/n_humans for x in scenario_results, i in 1:1000]
+ARs = [mean(rand(x.n_human_recovered_reps[:,n_steps] .+ x.n_human_infections_reps[:,n_steps], n_reps))/n_humans for x in scenario_results, i in 1:1000]
 
 
 ARs_df = DataFrame(ARs', these_labs) 
 
 ARs_df_long = stack(ARs_df, 1:length(these_labs))
-this_p = @df ARs_df_long boxplot(:variable, :value, ylabel="AR", legend=:none)
+this_p = @df ARs_df_long boxplot(:variable, :value, ylabel="AR", legend=:none, xrotation=90)
 png(this_p, string("plots/AR_boot_", savename(this_sim_dict), ".png"))
 
+# combo plot AR and R0
+ARs_df_long.measure = ["AR" for i in 1:nrow(ARs_df_long)]
+
+R0_boot_long.measure= ["R0" for i in 1:nrow(R0_boot_long)]
+
+combo = vcat(ARs_df_long, R0_boot_long)
+
+CSV.write(datadir("sim_summaries", string("combo_plot_AR_R0_", savename(this_sim_dict, "csv"))), combo)
+
+# datadir("sim_summaries", savename(this_sim_dict, "csv")
 
 # AR Convergence
 AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_steps] .+ x[:n_human_infections_reps][1:i,n_steps])/n_humans for x in scenario_results, i in 1:n_reps]
@@ -253,3 +263,20 @@ CSV.write(datadir("sim_summaries", savename(this_sim_dict, "csv")), summary_esti
 
 @tagsave(datadir("sim_summaries", savename(this_sim_dict, "jld2")), tostringdict(struct2dict(summary_estimates)), safe=true)
 
+# saving biting Distributions
+
+bd_mat = Matrix(undef, n_humans, length(scenario_results))
+for i in 1:length(scenario_results)
+  bd_mat[:, i] = vec(scenario_results[i].human_bite_distribution)
+end
+bd_df = DataFrame(bd_mat, human_distribution_names)
+
+CSV.write(datadir("sim_summaries", string("human_bite_distributions_", savename(this_sim_dict, "csv"))), bd_df)
+
+bd_mat = Matrix(undef, n_mosquitoes, length(scenario_results))
+for i in 1:length(scenario_results)
+  bd_mat[:, i] = vec(scenario_results[i].mosquito_bite_distribution)
+end
+bd_df = DataFrame(bd_mat, human_distribution_names)
+
+CSV.write(datadir("sim_summaries", string("mosquito_bite_distributions_", savename(this_sim_dict, "csv"))), bd_df)
