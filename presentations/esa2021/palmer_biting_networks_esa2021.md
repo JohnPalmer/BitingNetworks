@@ -39,6 +39,16 @@ This presentation discusses various steps of on going research
 
 ## Slide
 
+Literature shows that degree distribution on either side of a bipartite network can have big effects on dynamics. Specifically scale-free distributions
+
+But what about real-world distributions?
+
+Toy ABM shows that there can still be differences - show results
+
+What types of distributions should we expect and where? More like levy? more like exponential? more like uniform?
+
+## Slide
+
 Barcelona risk map 
 
 CTract aggregation

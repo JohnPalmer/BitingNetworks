@@ -23,6 +23,19 @@ const human_infection_time = 3
 # how long do mosquitoes live. Since mosquitoes do not usually get accute arbovirus infections, the life span is the key: They will go from susceptible->infected->dead/reborn. (With assumption of population stability, deaths simply put the agent back to susceptible status.) "Unlike arboviral infections in humans, which are usually acute, arboviral infections in mosquitoes are persistent. Once the infection is established, the mosquito remains infected for the rest of its life." https://www.sciencedirect.com/science/article/pii/S1931312819303701
 const mosquito_life_span = 20
 
+# Barcelona probabilities from BarcelonaTiger Repository
+bcn_pop = DataFrame(CSV.File("../BarcelonaTiger/data/proc/biting_networks_veri_census_sections_bcn_pop_props.csv"))
+
+human_probs_bcn = bcn_pop.vri
+
+bcn_districts = unique(bcn_pop.District)
+
+human_probs_bcn_set = [filter(x -> x.District == d, bcn_pop).vri for d in bcn_districts]
+
+push!(human_probs_bcn_set, human_probs_bcn)
+
+human_probs_bcn_set_names = push!(bcn_districts, "bcn_all")
+
 fixed_mosquito_prob = (1/n_humans)
 # mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
 # mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
@@ -53,7 +66,7 @@ human_distributions = (
   tlevy6p1 = Truncated(Levy(6.1, .0001), 1, 1000),
 )
 
-this_set_name = "l3_cueml16"
+this_set_name = "bcn_probs"
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
@@ -61,12 +74,16 @@ this_sim_dict_a = @strdict n_steps n_reps n_humans n_mosquitoes transmission_pro
 
 this_sim_dict = @strdict n_steps n_reps n_humans n_mosquitoes transmission_prob expected_bites human_infection_time mosquito_life_span this_set_name
 
+# FOR BARCELONA
+human_distributions = human_probs_bcn_set
+human_distribution_names = human_probs_bcn_set_names
+
 hdi = 1
 
 for hdi in 1:length(human_distributions)
 
   human_distribution = human_distributions[hdi]
-  human_distribution_name = string(keys(human_distributions)[hdi])
+  human_distribution_name = human_distribution_names[hdi]
 
   human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_humans, n_mosquitoes, expected_bites)
 
