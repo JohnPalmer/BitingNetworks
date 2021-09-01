@@ -27,8 +27,8 @@ fixed_mosquito_prob = (1/n_humans)
 # mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
 # mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
 
-mosquito_distribution = Truncated(Levy(1.1, .0001), 1, 1000)
-mosquito_distribution_name = "tlevy1p1"
+mosquito_distribution = Truncated(Levy(3.1, .0001), 1, 1000)
+mosquito_distribution_name = "tlevy3p1"
 
 subpop_a_size = Int(n_humans/2)
 subpop_a_distribution = Truncated(Normal(3, 3), 0, Inf)
@@ -53,7 +53,7 @@ human_distributions = (
   tlevy6p1 = Truncated(Levy(6.1, .0001), 1, 1000),
 )
 
-this_set_name = "l1_cueml16"
+this_set_name = "l3_cueml16"
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
