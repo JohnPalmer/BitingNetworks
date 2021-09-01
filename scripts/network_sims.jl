@@ -24,8 +24,11 @@ const human_infection_time = 3
 const mosquito_life_span = 20
 
 fixed_mosquito_prob = (1/n_humans)
-mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
-mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
+# mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
+# mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
+
+mosquito_distribution = Truncated(Levy(1.1, .0001), 1, 1000)
+mosquito_distribution_name = "tlevy1p1"
 
 subpop_a_size = Int(n_humans/2)
 subpop_a_distribution = Truncated(Normal(3, 3), 0, Inf)
@@ -233,4 +236,3 @@ CSV.write(datadir("sim_summaries", savename(this_sim_dict, "csv")), summary_esti
 
 @tagsave(datadir("sim_summaries", savename(this_sim_dict, "jld2")), tostringdict(struct2dict(summary_estimates)), safe=true)
 
-vscodedisplay(summary_estimates)
