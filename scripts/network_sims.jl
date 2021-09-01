@@ -8,20 +8,20 @@ Threads.nthreads()
 
 Random.seed!(123)
 
-const n_s = 1 # number of time steps (e.g. days)
-const n_r = 1 # number of repetitions to simulate
-const n_h = 1000 # number of humans in population
-const n_m = 4000 # number of mosquitoes in population
+n_s = 1000 # number of time steps (e.g. days)
+n_r = 1000 # number of repetitions to simulate
+n_h = 100 # number of humans in population
+n_m = 800 # number of mosquitoes in population
 
-const tp = .17 # transmission probability
+tp = .17 # transmission probability
 
-const eb = float(n_m) # expected bites
+eb = float(n_m*4) # expected total bites per time step
 
 # how long before infected human recovers
-const hit = 3
+hit = 3
 
 # how long do mosquitoes live. Since mosquitoes do not usually get accute arbovirus infections, the life span is the key: They will go from susceptible->infected->dead/reborn. (With assumption of population stability, deaths simply put the agent back to susceptible status.) "Unlike arboviral infections in humans, which are usually acute, arboviral infections in mosquitoes are persistent. Once the infection is established, the mosquito remains infected for the rest of its life." https://www.sciencedirect.com/science/article/pii/S1931312819303701
-const mls = 20
+mls = 20
 
 # Barcelona probabilities from BarcelonaTiger Repository
 bcn_pop = DataFrame(CSV.File("../BarcelonaTiger/data/proc/biting_networks_veri_census_sections_bcn_pop_props.csv"))
@@ -36,7 +36,7 @@ push!(human_probs_bcn_set, human_probs_bcn)
 
 human_probs_bcn_set_names = push!(bcn_districts, "bcn_all")
 
-fixed_mosquito_prob = (1/n_h)
+fixed_mosquito_prob = .0001/n_h
 mosquito_distribution = fixed_mosquito_prob:fixed_mosquito_prob
 mosquito_distribution_name = string("fixed_", fixed_mosquito_prob)
 
@@ -89,24 +89,25 @@ for hdi in 1:length(human_distributions)
 
   human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_h, n_m, eb)
 
-  these_iterations = 1:length(human_probs)*length(mosquito_probs)
-
   bn = BitArray(undef, length(human_probs), length(mosquito_probs))
   # biting network snapshot
-  Threads.@threads for i in these_iterations
-    this_row = cld(i, length(mosquito_probs))
-    this_col = mod1(i, length(mosquito_probs))
-    h = human_probs[this_row]
-    m = mosquito_probs[this_col]
-    joint_prob = h*m
-    bn[this_row, this_col] = rand(Bernoulli( ifelse(joint_prob<1, joint_prob, 1)), 1)[1]
+  Threads.@threads for i in 1:length(human_probs)
+    for j in 1:length(mosquito_probs)
+      joint_prob = human_probs[i]*mosquito_probs[j]
+      bn[i, j] = rand(Bernoulli( ifelse(joint_prob<1, joint_prob, 1)), 1)[1]
+    end
   end
-
   mosquito_bite_distribution = transpose(sum(bn, dims=1))
 
   human_bite_distribution = sum(bn, dims=2)
 
-# density(human_bite_distribution)
+mean(human_bite_distribution)
+
+mean(mosquito_bite_distribution)
+
+density(human_probs)
+density(human_bite_distribution)
+# density(mosquito_bite_distribution)
 
   n_human_infections_reps = Array{Int64}(undef, n_r, n_s)
 
