@@ -8,7 +8,7 @@ these_plots = []
 
 this_max = maximum([maximum(x[1]) for x in scenario_results])/n_humans
 
-steps_to_plot = 15
+steps_to_plot = 50
 
 for i in 1:length(human_distributions)
   n_human_infections_reps = scenario_results[i][1]./n_humans
@@ -21,6 +21,8 @@ for i in 1:length(human_distributions)
 
   push!(these_plots, this_p)
 end
+
+plot(these_plots[6])
 
 max_bites = maximum([maximum(x[4]) for x in scenario_results])
 

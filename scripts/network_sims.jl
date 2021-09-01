@@ -53,7 +53,7 @@ human_distributions = (
   tlevy6p1 = Truncated(Levy(6.1, .0001), 1, 1000),
 )
 
-this_set_name = "cueml16"
+this_set_name = "l1_cueml16"
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
