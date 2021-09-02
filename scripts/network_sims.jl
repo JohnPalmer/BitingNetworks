@@ -13,7 +13,7 @@ n_r = 1000 # number of repetitions to simulate
 n_h = 1000 # number of humans in population
 n_m = 8000 # number of mosquitoes in population
 
-tp = .17 # transmission probability
+tp = .1 # transmission probability
 
 eb = float(n_m*3) # expected total bites per time step
 
@@ -89,7 +89,7 @@ for hdi in 1:length(human_distributions)
 
   human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_h, n_m, eb)
 
-  bn = BitArray(undef, length(human_probs), length(mosquito_probs))
+  bn = Array{Int}(undef, length(human_probs), length(mosquito_probs))
   # biting network snapshot
   Threads.@threads for i in 1:length(human_probs)
     for j in 1:length(mosquito_probs)
@@ -182,7 +182,7 @@ this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none, 
 png(this_p, string("plots/R0_boot_", savename(this_sim_dict), ".png"))
 
 # R0 Convergence
-human_R0_convergence_checks = [x[:human_R0_converge_check][conv_reps] for x in scenario_results]
+human_R0_convergence_checks = [x.human_R0_converge_check[conv_reps] for x in scenario_results]
 
 Plots.plot(human_R0_convergence_checks, label=:none, xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
 Plots.plot!(size=(800,600))
