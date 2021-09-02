@@ -2,17 +2,26 @@ library(tidyverse)
 library(network)
 library(bipartite) 
 library(data.table)
+require(ggplot2)
+require(network)
+require(igraph)
+require(sna)
+require(ggnet)
+require(ergm)
+require(intergraph)
+require(RColorBrewer)
+
 
 latent_period = 3
 recovery_period = 3
 
 transmission_prob = .01
 
-n_humans = 5000
+n_humans = 10
 mean_bites_per_person = 10
 human_ids = paste("H", 1:n_humans)
 
-n_mosquitoes = 10000
+n_mosquitoes = 40
 mean_bites_per_mosquito = 2
 mosquito_ids = paste("M", 1:n_mosquitoes)
 

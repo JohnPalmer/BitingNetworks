@@ -57,16 +57,11 @@ human_distributions = (
   constant = (1/n_m):(1/n_m),
   uniform = Uniform(0,1),
   exp = Exponential(1/.5),
-  mixed_norms = vcat(subpop_a, subpop_b),
   tlevy1p1 = Truncated(Levy(1.1, .0001), 1, 1000),
-  tlevy2p1 = Truncated(Levy(2.1, .0001), 1, 1000),
-  tlevy3p1 = Truncated(Levy(3.1, .0001), 1, 1000),
-  tlevy4p1 = Truncated(Levy(4.1, .0001), 1, 1000),
-  tlevy5p1 = Truncated(Levy(5.1, .0001), 1, 1000),
-  tlevy6p1 = Truncated(Levy(6.1, .0001), 1, 1000),
+  tlevy2p1 = Truncated(Levy(2.1, .0001), 1, 1000)
 )
 
-this_set_name = "bcn_probs"
+this_set_name = "cuel12"
 
 human_distribution_names = join([string(x) for x in keys(human_distributions)], ".")
 
@@ -75,10 +70,12 @@ this_sim_dict_a = @strdict n_s n_r n_h n_m tp eb hit mls
 this_sim_dict = @strdict n_s n_r n_h n_m tp eb hit mls this_set_name
 
 # FOR BARCELONA
-human_distributions = human_probs_bcn_set
-human_distribution_names = [first(replace(x, " " => ""), 5) for x in human_probs_bcn_set_names]
+#human_distributions = human_probs_bcn_set
+#human_distribution_names = [first(replace(x, " " => ""), 5) for x in human_probs_bcn_set_names]
 
-human_distribution_names_long = human_probs_bcn_set_names
+# human_distribution_names_long = human_probs_bcn_set_names
+
+human_distribution_names_long = human_distribution_names
 
 hdi = 1
 
