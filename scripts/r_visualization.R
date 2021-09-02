@@ -8,7 +8,7 @@ library(RColorBrewer)
 library(tidybayes)
 
 
-plot_data <- read_csv("data/sim_summaries/combo_plot_AR_R0_eb=24000.0_hit=3_mls=20_n_h=1000_n_m=8000_n_r=1000_n_s=1000_this_set_name=bcn_probs_tp=0.17.csv")
+plot_data <- read_csv("data/sim_summaries/combo_plot_AR_R0_eb=24000.0_hit=3_mls=20_n_h=1000_n_m=8000_n_r=2000_n_s=1000_this_set_name=bcn_probs_tp=0.035.csv")
 
 ggplot(plot_data, aes(x=value, y=variable)) + stat_halfeye() + facet_wrap(~measure, scale="free_x")
 
@@ -21,7 +21,7 @@ pop_dist = bind_rows(pop_dist, pop_dist_all)
 ggplot(bind_rows(plot_data, pop_dist), aes(x=value, y=variable)) + stat_halfeye() + facet_wrap(~measure, scale="free_x")
 
 
-hbd = read_csv("data/sim_summaries/human_bite_distributions_eb=24000.0_hit=3_mls=20_n_h=1000_n_m=8000_n_r=1000_n_s=1000_this_set_name=bcn_probs_tp=0.17.csv") %>% pivot_longer(cols=everything(), names_to="variable", values_to="value") %>% mutate(measure = "Bites per person")
+hbd = read_csv("data/sim_summaries/human_bite_distributions_eb=24000.0_hit=3_mls=20_n_h=1000_n_m=8000_n_r=2000_n_s=1000_this_set_name=bcn_probs_tp=0.035.csv") %>% pivot_longer(cols=everything(), names_to="variable", values_to="value") %>% mutate(measure = "Bites per person")
 
 ggplot(hbd, aes(x=value, y=variable)) + stat_halfeye() #+ facet_wrap(~measure, scale="free_x"))
 
