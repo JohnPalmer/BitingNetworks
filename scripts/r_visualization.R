@@ -8,7 +8,7 @@ library(RColorBrewer)
 library(tidybayes)
 
 
-plot_data <- read_csv("data/sim_summaries/combo_plot_AR_R0_eb=24000.0_hit=3_mls=20_n_h=1000_n_m=8000_n_r=2000_n_s=1000_this_set_name=bcn_probs_tp=0.035.csv")
+plot_data <- read_csv("data/sim_summaries/combo_plot_AR_R0_eb=24000.0_hit=3_mls=20_n_h=1000_n_m=8000_n_r=1000_n_s=1000_this_set_name=bcn_probs_tp=0.1.csv")
 
 ggplot(plot_data, aes(x=value, y=variable)) + stat_halfeye() + facet_wrap(~measure, scale="free_x")
 

@@ -9,9 +9,9 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
-n_r = 2000 # number of repetitions to simulate
-n_h = 100 # number of humans in population
-n_m = 400 # number of mosquitoes in population
+n_r = 4000 # number of repetitions to simulate
+n_h = 10 # number of humans in population
+n_m = 80 # number of mosquitoes in population
 
 tp = .1 # transmission probability
 
@@ -53,25 +53,27 @@ subpop_b = rand(subpop_b_distribution, subpop_b_size)
 
 scenario_results = []
 
-human_distributions = ( 
-  constant = (1/n_m):(1/n_m),
-  uniform = Uniform(0,1),
-  exp = Exponential(1/.5),
-  levy1p1 = Levy(1.1, .0001),
-  levy2p1 = Levy(2.1, .0001)
-)
+# FOR THEORETICAL DISTRIBUTIONS
+# this_set_name = "cuel12"
+# human_distributions = ( 
+#  constant = (1/n_m):(1/n_m),
+#  uniform = Uniform(0,1),
+#  exp = Exponential(1/.5),
+#  levy1p1 = Levy(1.1, .0001),
+#  levy2p1 = Levy(2.1, .0001)
+#)
+# human_distribution_names = [string(x) for x in keys(human_distributions)]
 
-this_set_name = "cuel12"
+# FOR BARCELONA
+this_set_name = "bcn_probs_updated_2022_06_5"
+human_distributions = human_probs_bcn_set
+human_distribution_names = [first(replace(x, " " => ""), 5) for x in human_probs_bcn_set_names]
 
-human_distribution_names = [string(x) for x in keys(human_distributions)]
 
 this_sim_dict_a = @strdict n_s n_r n_h n_m tp eb hit mls
 
 this_sim_dict = @strdict n_s n_r n_h n_m tp eb hit mls this_set_name
 
-# FOR BARCELONA
-#human_distributions = human_probs_bcn_set
-#human_distribution_names = [first(replace(x, " " => ""), 5) for x in human_probs_bcn_set_names]
 
 human_distribution_names_long = human_distribution_names
 
