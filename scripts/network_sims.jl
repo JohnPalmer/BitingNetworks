@@ -9,7 +9,7 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
-n_r = 1000 # number of repetitions to simulate
+n_r = 30000 # number of repetitions to simulate
 n_h = 100 # number of humans in population
 n_m = 800 # number of mosquitoes in population
 
@@ -124,7 +124,7 @@ density(human_bite_distribution)
     n_mosquito_infections_reps[r, :], n_human_infections_reps[r, :], n_human_recovered_reps[r, :] = bite_steps(n_s, n_h, n_m, hit, mls, human_probs, mosquito_probs, tp)
 
     next!(p)
-    
+
   end
 
   human_R0_results = calculate_r0(n_r, n_human_infections_reps, 1)
