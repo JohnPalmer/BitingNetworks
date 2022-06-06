@@ -9,7 +9,7 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
-n_r = 50000 # number of repetitions to simulate
+n_r = 100 # number of repetitions to simulate
 n_h = 10 # number of humans in population
 n_m = 80 # number of mosquitoes in population
 
@@ -80,7 +80,9 @@ human_distribution_names_long = human_distribution_names
 
 hdi = 1
 
-for hdi in 1:length(human_distributions)
+p = Progress(length(human_distributions))
+
+Threads.@threads for hdi in 1:length(human_distributions)
 
   human_distribution = human_distributions[hdi]
   human_distribution_name = human_distribution_names[hdi]
@@ -89,7 +91,7 @@ for hdi in 1:length(human_distributions)
 
   bn = Array{Int}(undef, length(human_probs), length(mosquito_probs))
   # biting network snapshot
-  Threads.@threads for i in 1:length(human_probs)
+  for i in 1:length(human_probs)
     for j in 1:length(mosquito_probs)
       joint_prob = human_probs[i]*mosquito_probs[j]
       bn[i, j] = rand(Bernoulli( ifelse(joint_prob<1, joint_prob, 1)), 1)[1]
@@ -115,15 +117,11 @@ density(human_bite_distribution)
 
   r = 1
 
-  p = Progress(n_r)
-
-  Threads.@threads for r = 1:n_r
+  for r = 1:n_r
 
     human_probs, mosquito_probs = distribute_bite_probabilities(human_distribution, mosquito_distribution, n_h, n_m, eb)
   
     n_mosquito_infections_reps[r, :], n_human_infections_reps[r, :], n_human_recovered_reps[r, :] = bite_steps(n_s, n_h, n_m, hit, mls, human_probs, mosquito_probs, tp)
-
-    next!(p)
 
   end
 
@@ -159,6 +157,8 @@ scenario_result = (
 
 push!(scenario_results, scenario_result)
 
+next!(p)
+
 end
 
 ## SUMMARY ANALYSIS ##
@@ -176,14 +176,14 @@ R0_boot_reps = [mean(rand(x.human_R0_reps, length(x.human_R0_reps))) for i in 1:
 R0_boot = DataFrame(R0_boot_reps, these_labs) 
 
 R0_boot_long = stack(R0_boot, 1:length(these_labs))
-this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none, xrotation=90)
+this_p = @df R0_boot_long boxplot(:variable, :value, ylabel="R0", legend=:none, xrotation=90);
 png(this_p, string("plots/R0_boot_", savename(this_sim_dict), ".png"))
 
 # R0 Convergence
 human_R0_convergence_checks = [x.human_R0_converge_check[conv_reps] for x in scenario_results]
 
-Plots.plot(human_R0_convergence_checks, label=:none, xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8)
-Plots.plot!(size=(800,600))
+Plots.plot(human_R0_convergence_checks, label=:none, xlabel="Repetitions", ylabel="Mean R0", legend=:bottomright, linewidth=2, palette = :Dark2_8);
+Plots.plot!(size=(800,600));
 png(string("plots/R0_conv", savename(this_sim_dict), ".png"))
 
 # AR box plot
@@ -193,7 +193,7 @@ ARs = [mean(rand(x.n_human_recovered_reps[:,n_s] .+ x.n_human_infections_reps[:,
 ARs_df = DataFrame(ARs', these_labs) 
 
 ARs_df_long = stack(ARs_df, 1:length(these_labs))
-this_p = @df ARs_df_long boxplot(:variable, :value, ylabel="AR", legend=:none, xrotation=90)
+this_p = @df ARs_df_long boxplot(:variable, :value, ylabel="AR", legend=:none, xrotation=90);
 png(this_p, string("plots/AR_boot_", savename(this_sim_dict), ".png"))
 
 # combo plot AR and R0
@@ -210,8 +210,8 @@ CSV.write(datadir("sim_summaries", string("combo_plot_AR_R0_", savename(this_sim
 # AR Convergence
 AR_convergence_check = [mean(x[:n_human_recovered_reps][1:i,n_s] .+ x[:n_human_infections_reps][1:i,n_s])/n_h for x in scenario_results, i in 1:n_r]
 
-Plots.plot(transpose(AR_convergence_check[:, conv_reps]), label=:none, xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2)
-Plots.plot!(size=(800,600))
+Plots.plot(transpose(AR_convergence_check[:, conv_reps]), label=:none, xlabel="Repititions", ylabel="Mean Attack Rate", palette = :Dark2_8, linewidth=2);
+Plots.plot!(size=(800,600));
 png(string("plots/AR_conv", savename(this_sim_dict), ".png"))
 
 # Point estimate summary
@@ -231,7 +231,6 @@ AR = [mean(x[:n_human_recovered_reps][:,n_s] .+ x[:n_human_infections_reps][:,n_
 AR_ul90 = [quantile(x[:n_human_recovered_reps][:,n_s] .+ x[:n_human_infections_reps][:,n_s], .95)/n_h for x in scenario_results],
 
 AR_ll90 = [quantile(x[:n_human_recovered_reps][:,n_s] .+ x[:n_human_infections_reps][:,n_s], .05)/n_h for x in scenario_results],
-
 
 bites_per_person_mean = [mean(x.human_bite_distribution) for x in scenario_results],
 
