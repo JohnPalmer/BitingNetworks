@@ -9,7 +9,7 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
-n_r = 10000 # number of repetitions to simulate
+n_r = 1000 # number of repetitions to simulate
 n_h = 100 # number of humans in population
 n_m = 800 # number of mosquitoes in population
 
@@ -80,7 +80,7 @@ human_distribution_names_long = human_distribution_names
 
 hdi = 1
 
-p = Progress(length(human_distributions))
+p = Progress(length(human_distributions)*n_r)
 
 Threads.@threads for hdi in 1:length(human_distributions)
 
@@ -123,6 +123,8 @@ density(human_bite_distribution)
   
     n_mosquito_infections_reps[r, :], n_human_infections_reps[r, :], n_human_recovered_reps[r, :] = bite_steps(n_s, n_h, n_m, hit, mls, human_probs, mosquito_probs, tp)
 
+    next!(p)
+    
   end
 
   human_R0_results = calculate_r0(n_r, n_human_infections_reps, 1)
@@ -156,8 +158,6 @@ scenario_result = (
 @tagsave(datadir("sims", savename(scenario_result, "jld2")), tostringdict(ntuple2dict(scenario_result)), safe=true)
 
 push!(scenario_results, scenario_result)
-
-next!(p)
 
 end
 
