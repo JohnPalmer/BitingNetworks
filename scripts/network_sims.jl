@@ -9,9 +9,9 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
-n_r = 100 # number of repetitions to simulate
-n_h = 10 # number of humans in population
-n_m = 80 # number of mosquitoes in population
+n_r = 10000 # number of repetitions to simulate
+n_h = 100 # number of humans in population
+n_m = 800 # number of mosquitoes in population
 
 tp = .1 # transmission probability
 
