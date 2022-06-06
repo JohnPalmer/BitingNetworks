@@ -164,8 +164,8 @@ end
 ## SUMMARY ANALYSIS ##
 
 # main labels
-these_labs = human_distribution_names_long
-# these_labs[11] = "Barcelona (all)"
+these_labs = human_probs_bcn_set_names
+these_labs[11] = "Barcelona (all)"
 
 # reps to use for checking convergence (upper half)
 conv_reps =  Int(ceil(n_r/2)):n_r
