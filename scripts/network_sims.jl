@@ -9,13 +9,13 @@ Threads.nthreads()
 Random.seed!(123)
 
 n_s = 1000 # number of time steps (e.g. days)
-n_r = 10000 # number of repetitions to simulate
+n_r = 1000 # number of repetitions to simulate
 n_h = 100 # number of humans in population
 n_m = 800 # number of mosquitoes in population
 
 tp = .1 # transmission probability
 
-eb = float(n_m*2) # expected total bites per time step
+eb = float(n_m*1) # expected total bites per time step
 
 # how long before infected human recovers
 hit = 3

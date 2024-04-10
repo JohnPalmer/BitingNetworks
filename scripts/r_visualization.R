@@ -7,7 +7,7 @@ library(tidyverse)
 library(RColorBrewer)
 library(tidybayes)
 
-these_params = "_eb=1600.0_hit=3_mls=20_n_h=100_n_m=800_n_r=10000_n_s=1000_this_set_name=bcn_probs_updated_2022_06_5_tp=0.1"
+these_params = "_eb=800.0_hit=3_mls=20_n_h=100_n_m=800_n_r=1000_n_s=1000_this_set_name=bcn_probs_updated_2022_06_5_tp=0.1"
 
 plot_data <- read_csv(paste0("data/sim_summaries/combo_plot_AR_R0", these_params, ".csv"))
 
